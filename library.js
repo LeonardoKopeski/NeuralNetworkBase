@@ -34,17 +34,20 @@ class neuralNetwork{
             err[0][index] = elm - expectedOutput[index]
         })
 
-        this.nodes.reverse().forEach((node, nodeIndex) => {
-            if(nodeIndex == 0 || nodeIndex == this.nodes.length){
-                return
-            }
+        for(var i = this.nodes.length-2; i >= 0; i--){
+            var arr = []
+            var invertedIndex = Math.abs(i-(this.nodes.length-2))
 
-            var w = this.weigths[nodeIndex-1]
-            var sum = 0
-            Object.values(w).forEach(elm=>{
-                sum += elm
+            Object.keys(err[invertedIndex]).forEach(elm=>{
+                for(var c = 0; c < this.nodes[i]; c++){
+                    var weigth = this.weigths[i][c+"-"+elm]
+                    err[invertedIndex+1][c] = elm * weigth
+                }
             })
-            console.log(sum)
+        }
+
+        Object.keys(err).forEach(x => {
+            this.weigths
         })
 
         return Object.values(res)
