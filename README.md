@@ -88,3 +88,10 @@ XOR de 0 e 1 resulta em: 1
 XOR de 1 e 1 resulta em: 0
 */
 ```
+
+# Credits
+Author: Leonardo Kopeski
+Inspirated By: José Bezerra
+
+# License
+MIT
