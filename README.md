@@ -1,7 +1,8 @@
-# NeuralNetworkBase
+# NeuralNetworkLibrary
+## Idea
 Basicamente, eu estava entediado, e resolvi criar a base de uma IA, sem usar nenhuma biblioteca
 
-# Docs
+## Docs
 
 Para criar um neuronio, devemos declarar um novo objeto da classe neuron
 ```
@@ -57,7 +58,7 @@ Caso queira gerar uma mutação do neuronio, use:
 neuron.mutate(n, <learningRate>)
 ```
 
-# Example
+## Example
 Vou usar o exemplo de um XOR(ou exclusivo):
 ```
 var n = new neuron(2,3,1)
@@ -89,9 +90,9 @@ XOR de 1 e 1 resulta em: 0
 */
 ```
 
-# Credits
+## Credits
 - Author: Leonardo Kopeski
 - Inspirated By: José Bezerra
 
-# License
+## License
 MIT
