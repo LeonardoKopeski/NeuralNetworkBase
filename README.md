@@ -6,7 +6,7 @@ Basicamente, eu estava entediado, e resolvi criar a base de uma IA, sem usar nen
 
 Para criar um neuronio, devemos declarar um novo objeto da classe neuron
 ```
-var n = new neuron(<InputNodes>,<HiddenNodes>,<OutputNodes>)
+var n = new neuron([<nodes>])
 ```
 
 Para treinar o neuronio, podemos usar dois modelos, mas para ambos os dois, precimaos criar um dataset
@@ -32,11 +32,6 @@ Para treinar de forma repetida, usamos:
 n.repeatedTrain(<dataset>, <repetições>,<learningRate>)
 ```
 
-Para treinar até ele atingir um determinado score, usamos:
-```
-n.scoredTrain(<dataset>, <score>,<learningRate>)
-```
-
 Para testar o nosso neuronio, devemos usar:
 ```
 n.execute(<input>)
@@ -49,19 +44,13 @@ n.generateRecipe()
 
 Mas, caso queira importar...
 ```
-n.loadRecipe(<recipe>)
-```
-
-(Desatualizado)
-Caso queira gerar uma mutação do neuronio, use:
-```
-neuron.mutate(n, <learningRate>)
+var n = neuron.loadRecipe(<recipe>)
 ```
 
 ## Example
 Vou usar o exemplo de um XOR(ou exclusivo):
 ```
-var n = new neuron(2,3,1)
+var n = new neuron([2,3,1])
 var dataSet = {
   inputs:[
     [1,1],
@@ -92,7 +81,6 @@ XOR de 1 e 1 resulta em: 0
 
 ## Credits
 - Author: Leonardo Kopeski
-- Inspirated By: José Bezerra
 
 ## License
 MIT
