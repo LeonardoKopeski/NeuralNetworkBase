@@ -11,30 +11,19 @@ var n = new neuron([<nodes>])
 
 Para treinar o neuronio, podemos usar dois modelos, mas para ambos os dois, precimaos criar um dataset
 ```
-var dataSet = {
-  inputs:[
-    <input1>,
-    <input2>,
-    <input3>,
-    <input4>
-  ],
-  outputs:[
-    <outputReferenteAoInput1>,
-    <outputReferenteAoInput2>,
-    <outputReferenteAoInput3>,
-    <outputReferenteAoInput4>
-  ]
-}
+n.set(input, expectedOutput)
 ```
 
 Para treinar de forma repetida, usamos:
 ```
-n.repeatedTrain(<dataset>, <repetições>,<learningRate>)
+n.train(<repetições>,<learningRate>)
 ```
 
 Para testar o nosso neuronio, devemos usar:
 ```
 n.execute(<input>)
+// Ou
+n.asyncExecute(<input>)
 ```
 
 Caso queira exportar o neuronio, use:
@@ -51,26 +40,21 @@ var n = neuron.loadRecipe(<recipe>)
 Vou usar o exemplo de um XOR(ou exclusivo):
 ```
 var n = new neuron([2,3,1])
-var dataSet = {
-  inputs:[
-    [1,1],
-    [0,0],
-    [0,1],
-    [1,0]
-  ],
-  outputs:[
-    [0],
-    [0],
-    [1],
-    [1]
-  ]
-}
-n.repeatedTrain(dataSet, 5000,.3)
 
-console.log("XOR de 0 e 0 resulta em: "+Math.round(n.execute([0,0])[0]))
-console.log("XOR de 1 e 0 resulta em: "+Math.round(n.execute([1,0])[0]))
-console.log("XOR de 0 e 1 resulta em: "+Math.round(n.execute([0,1])[0]))
-console.log("XOR de 1 e 1 resulta em: "+Math.round(n.execute([1,1])[0]))
+n.learningRate = .3
+
+n.set([0, 0], [0])
+n.set([0, 1], [1])
+n.set([1, 0], [1])
+n.set([1, 1], [0])
+
+n.train(5000).then(()=>{
+  console.log("XOR de 0 e 0 resulta em: "+Math.round(n.execute([0,0])[0]))
+  console.log("XOR de 1 e 0 resulta em: "+Math.round(n.execute([1,0])[0]))
+  console.log("XOR de 0 e 1 resulta em: "+Math.round(n.execute([0,1])[0]))
+  console.log("XOR de 1 e 1 resulta em: "+Math.round(n.execute([1,1])[0]))
+})
+
 /*
 XOR de 0 e 0 resulta em: 0
 XOR de 1 e 0 resulta em: 1
