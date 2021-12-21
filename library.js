@@ -1,6 +1,6 @@
 /*
  * Author: Leonardo Kopeski
- * Last Update: 27/09/2021
+ * Last Update: 21/12/2021
  */
 
 class templateFunctions{
@@ -12,28 +12,6 @@ class templateFunctions{
     }
     static random(x){
         return (Math.random()*(x*2))-x
-    }
-    static validateDataSet(dataSet){
-        if(dataSet.inputs == undefined){
-            return false
-        }
-        if(dataSet.outputs == undefined){
-            return false
-        }
-        if(dataSet.inputs.length != dataSet.outputs.length){
-            return false
-        }
-        var ok = true
-        dataSet.inputs.forEach(elm=>{
-            if(typeof elm != "object" || elm[0] == undefined){
-                ok = false
-            }
-        })
-        if(!ok){
-            return false
-        }
-
-        return true
     }
 }
 
@@ -138,17 +116,42 @@ class array2D{
 }
 
 class neuron{
-    constructor(nodes){
+    constructor(nodes, learningRate = .1){
         this.nodes = nodes
         this.bias = []
         this.weigths = []
+
+        this.dataSet = {inputs: [], outputs: []}
+        this.learningRate = learningRate
 
         for(var c = 1; c < nodes.length; c++){
             this.bias.push(new array2D(nodes[c], 1))
         }
         for(var c = 1; c < nodes.length; c++){
             this.weigths.push(new array2D(nodes[c], nodes[c-1]))
-        }   
+        }
+    }
+
+    set(input, expectedOutput){
+        if(input.length != this.nodes[0]){
+            throw "Invalid input array"
+        }
+        if(expectedOutput.length != this.nodes[this.nodes.length-1]){
+            throw "Invalid output array"
+        }
+        this.dataSet.inputs.push(input)
+        this.dataSet.outputs.push(expectedOutput)
+    }
+
+    async asyncExecute(inputArr){
+        var res = new array2D(this.inputNodes, 1, inputArr)
+        for(var c = 0; c < this.nodes.length-1; c++){
+            res = array2D.multiply(this.weigths[c], res)
+            res = array2D.sum(res, this.bias[c])
+            res.data = res.map(templateFunctions.sigmoid)
+        }
+
+        return array2D.transpose(res).toArray()[0]
     }
 
     execute(inputArr){
@@ -162,49 +165,45 @@ class neuron{
         return array2D.transpose(res).toArray()[0]
     }
 
-    repeatedTrain(dataSet, executions, learningRate = .1){
-        if(!templateFunctions.validateDataSet(dataSet)){
-            throw "NeuralNetworkLibrary: Invalid DataSet"
-        }
+    async train(repeats){
+        for(var e = 0; e < repeats; e++){
+            for(var c in this.dataSet.inputs){
+                var inputArr = this.dataSet.inputs[c]
+                var outputArr = this.dataSet.outputs[c]
 
-        for(var i = 0; i < executions; i++){
-            for(var c in dataSet.inputs){
-                this.train(dataSet.inputs[c], dataSet.outputs[c], learningRate)
-            }
-        }
-    }
+                var history = [new array2D(this.nodes[0], 1, inputArr)]
+                var output = new array2D(this.inputNodes, 1, inputArr)
 
-    train(inputArr, outputArr, learningRate = .1){
-        // FeedForward
-        var history = [new array2D(this.nodes[0], 1, inputArr)]
-        var output = new array2D(this.inputNodes, 1, inputArr)
-        for(var c = 0; c < this.nodes.length-1; c++){
-            output = array2D.multiply(this.weigths[c], output)
-            output = array2D.sum(output, this.bias[c])
-            output.data = output.map(templateFunctions.sigmoid)
-            
-            history.push(output)
-        }
-
-        // BackPropagation
-        var expected = new array2D(this.nodes[this.nodes.length-1], 1, outputArr)
+                // FeedForward
+                for(var c = 0; c < this.nodes.length-1; c++){
+                    output = array2D.multiply(this.weigths[c], output)
+                    output = array2D.sum(output, this.bias[c])
+                    output.data = output.map(templateFunctions.sigmoid)
+                    
+                    history.push(output)
+                }
         
-        var historyTransposed = history.map(elm => array2D.transpose(elm))
-        var historyDerivated = history.map(elm => new array2D(elm.height, elm.width, elm.map(templateFunctions.dsigmoid)))
-
-        var error = array2D.sub(expected, output)
-        for(var c = this.nodes.length-1; c >= 1;c--){
-            if(c != this.nodes.length-1){
-                var nextWeigth = array2D.transpose(this.weigths[c])
-                error = array2D.multiply(nextWeigth, error)
+                // BackPropagation
+                var expected = new array2D(this.nodes[this.nodes.length-1], 1, outputArr)
+                
+                var historyTransposed = history.map(elm => array2D.transpose(elm))
+                var historyDerivated = history.map(elm => new array2D(elm.height, elm.width, elm.map(templateFunctions.dsigmoid)))
+        
+                var error = array2D.sub(expected, output)
+                for(var c = this.nodes.length-1; c >= 1;c--){
+                    if(c != this.nodes.length-1){
+                        var nextWeigth = array2D.transpose(this.weigths[c])
+                        error = array2D.multiply(nextWeigth, error)
+                    }
+        
+                    var gradient = array2D.hadamard(error, historyDerivated[c])
+                    gradient = array2D.escalarMultiply(gradient, this.learningRate)
+                    this.bias[c-1] = array2D.sum(this.bias[c-1], gradient)
+        
+                    var deltas = array2D.multiply(gradient, historyTransposed[c-1])
+                    this.weigths[c-1] = array2D.sum(this.weigths[c-1], deltas)
+                }
             }
-
-            var gradient = array2D.hadamard(error, historyDerivated[c])
-            gradient = array2D.escalarMultiply(gradient, learningRate)
-            this.bias[c-1] = array2D.sum(this.bias[c-1], gradient)
-
-            var deltas = array2D.multiply(gradient, historyTransposed[c-1])
-            this.weigths[c-1] = array2D.sum(this.weigths[c-1], deltas)
         }
     }
 
