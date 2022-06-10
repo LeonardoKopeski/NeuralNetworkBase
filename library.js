@@ -1,6 +1,6 @@
 /*
  * Author: Leonardo Kopeski
- * Last Update: 21/12/2021
+ * Last Update: 10/06/2022
  */
 
 class templateFunctions{
@@ -20,9 +20,7 @@ class array2D{
         this.height = height
         this.width = width
 
-        if(value){
-            this.data = value
-        }else{
+        if(!value){
             this.data = []
             for(var x = 0; x < height; x++){
                 var arr = []
@@ -31,19 +29,17 @@ class array2D{
                 }
                 this.data.push(arr)
             }
+        }else{
+            this.data = value
         }
     }
 
-    retify(){
+    map(callback){
         if(typeof this.data[0] != "object"){
             this.data = [this.data]
         }
         this.height = this.data.length
         this.width = this.data[0].length
-    }
-
-    map(callback){
-        this.retify()
 
         return this.data.map((arr, x)=>{
             return arr.map((num, y)=>{
@@ -52,14 +48,10 @@ class array2D{
         })
     }
 
-    toArray(){
-        return this.data
-    }
-
     static transpose(a){
         var arr = new array2D(a.width, a.height)
         arr.data = arr.map((arr, x, y)=>{
-            return a.data[y][x] ? a.data[y][x] : a.data[y]
+            return a.data[y][x] || a.data[y]
         })
         return arr
     }
@@ -75,8 +67,8 @@ class array2D{
     static sub(a, b){
         var arr = new array2D(a.height, a.width)
         arr.data = arr.map((arr, x, y)=>{
-            var elm1 = a.data[x][y] == undefined? a.data[x] : a.data[x][y]
-            var elm2 = b.data[x][y] == undefined? b.data[x] : b.data[x][y]
+            var elm1 = a.data[x][y] || a.data[x]
+            var elm2 = b.data[x][y] || b.data[x]
             return elm1 - elm2
         })
         return arr
@@ -133,12 +125,6 @@ class neuron{
     }
 
     set(input, expectedOutput){
-        if(input.length != this.nodes[0]){
-            throw "Invalid input array"
-        }
-        if(expectedOutput.length != this.nodes[this.nodes.length-1]){
-            throw "Invalid output array"
-        }
         this.dataSet.inputs.push(input)
         this.dataSet.outputs.push(expectedOutput)
     }
@@ -151,7 +137,7 @@ class neuron{
             res.data = res.map(templateFunctions.sigmoid)
         }
 
-        return array2D.transpose(res).toArray()[0]
+        return array2D.transpose(res).data[0]
     }
 
     execute(inputArr){
@@ -162,7 +148,7 @@ class neuron{
             res.data = res.map(templateFunctions.sigmoid)
         }
 
-        return array2D.transpose(res).toArray()[0]
+        return array2D.transpose(res).data[0]
     }
 
     async train(repeats){
