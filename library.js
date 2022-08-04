@@ -1,6 +1,6 @@
 /*
  * Author: Leonardo Kopeski
- * Last Update: 10/06/2022
+ * Last Update: 04/08/2022
  */
 
 class templateFunctions{
@@ -12,6 +12,13 @@ class templateFunctions{
     }
     static random(x){
         return (Math.random()*(x*2))-x
+    }
+    static toBinary(number, len){
+        let binary = number.toString(2)
+        while(binary.length < len){
+            binary = "0" + binary
+        }
+        return binary
     }
 }
 
@@ -107,7 +114,7 @@ class array2D{
     }
 }
 
-class neuron{
+export class neuralNetwork{
     constructor(nodes, learningRate = .1){
         this.nodes = nodes
         this.bias = []
@@ -204,7 +211,7 @@ class neuron{
     static fromRecipe(recipe){
         var obj = JSON.parse(recipe)
 
-        var res = new neuron(obj.nodes)
+        var res = new neuralNetwork(obj.nodes)
         res.weigths = obj.weigths.map(x => {
             return new array2D(x.length, x[0].length, x)
         })
@@ -216,4 +223,66 @@ class neuron{
     }
 }
 
-module.exports = neuron
+export class wordIdentifier{
+    constructor(maxIndex, wordEmbedding, prefab = null){
+        if(maxIndex < 2){maxIndex = 2}
+        this.maxIndexes = Math.ceil(Math.log(maxIndex) / Math.log(2))
+        this.neuralNetwork = !prefab?
+            new neuralNetwork([50, 5, this.maxIndexes, this.maxIndexes], .5) : 
+            neuralNetwork.fromRecipe(prefab)
+        this.wordEmbedding = wordEmbedding
+    }
+    useWordEmbedding(message){
+        let embeddings = []
+        for(var c in message.split(" ")){
+            let word = message.split(" ")[c]
+                .replaceAll(",", "")
+                .replaceAll("!", "")
+                .replaceAll("?", "")
+
+            if(this.wordEmbedding[word]){
+                embeddings.push(this.wordEmbedding[word])
+            }
+        }
+
+        if(embeddings.length < 1){
+            embeddings.push(Array(50).fill(0))
+        }
+
+        let sum = []
+        for(var i = 0; i < embeddings.length; i++){
+            for(var j = 0; j < embeddings[i].length; j++){
+                if(!sum[j]){
+                    sum[j] = 0
+                }
+                sum[j] += embeddings[i][j]
+            }
+        }
+
+        let res = sum.map(x=>x/embeddings.length)
+
+        return res
+    }
+    run(message){
+        let input = this.useWordEmbedding(message)
+        let rawResponse = this.neuralNetwork.execute(input)
+        let response = rawResponse.map(x=>{
+            return Math.round(x)
+        })
+        let decimal = parseInt(response.join(""), 2)
+        return decimal
+    }
+    train({dataset, iterations}){
+        Object.keys(dataset).forEach(message=>{
+            let input = this.useWordEmbedding(message)
+            
+            let output = templateFunctions.toBinary(dataset[message], this.maxIndexes)
+                .split("")
+                .map(x=>parseInt(x))
+            
+            this.neuralNetwork.set(input, output)
+        })
+    
+        this.neuralNetwork.train(iterations)
+    }
+}
