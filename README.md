@@ -6,17 +6,18 @@ Basicamente, eu estava entediado, e resolvi criar a base de uma IA, sem usar nen
 
 Para criar um neuronio, devemos declarar um novo objeto da classe neuron
 ```
-var n = new neuron([<nodes>])
+var n = new neuralNetwork([<nodes>])
 ```
 
-Para treinar o neuronio, podemos usar dois modelos, mas para ambos os dois, precimaos criar um dataset
+Para treinar o neuronio, podemos usar dois modelos, mas para ambos os dois, precisamos criar um dataset
 ```
-n.set(input, expectedOutput)
+var dataset = new dataset()
+dataset.add(input, expectedOutput)
 ```
 
 Para treinar de forma repetida, usamos:
 ```
-n.train(<repetições>,<learningRate>)
+n.train(dataset, <repetições>)
 ```
 
 Para testar o nosso neuronio, devemos usar:
@@ -33,22 +34,22 @@ n.generateRecipe()
 
 Mas, caso queira importar...
 ```
-var n = neuron.loadRecipe(<recipe>)
+var n = neuralNetwork.loadRecipe(<recipe>)
 ```
 
 ## Example
-Vou usar o exemplo de um XOR(ou exclusivo):
+Vou usar o exemplo de um XOR(em outras palavras, "ou exclusivo"):
 ```
-var n = new neuron([2,3,1])
-
+var n = new neuralNetwork([2,3,1])
 n.learningRate = .3
 
-n.set([0, 0], [0])
-n.set([0, 1], [1])
-n.set([1, 0], [1])
-n.set([1, 1], [0])
+var dataset = new dataset()
+dataset.add([0, 0], [0])
+dataset.add([0, 1], [1])
+dataset.add([1, 0], [1])
+dataset.add([1, 1], [0])
 
-n.train(5000).then(()=>{
+n.train(dataset, 5000).then(()=>{
   console.log("XOR de 0 e 0 resulta em: "+Math.round(n.execute([0,0])[0]))
   console.log("XOR de 1 e 0 resulta em: "+Math.round(n.execute([1,0])[0]))
   console.log("XOR de 0 e 1 resulta em: "+Math.round(n.execute([0,1])[0]))
