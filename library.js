@@ -1,205 +1,280 @@
 /*
  * Author: Leonardo Kopeski
- * Last Update: 04/08/2022
+ * Last Update: 7/01/2023
  */
 
-class templateFunctions{
-    static sigmoid(x){
-        return 1 / (1 + Math.exp(-x))
-    }
-    static dsigmoid(x){
-        return x * (1 - x)
-    }
-    static random(x){
-        return (Math.random()*(x*2))-x
-    }
-    static toBinary(number, len){
-        let binary = number.toString(2)
-        while(binary.length < len){
-            binary = "0" + binary
-        }
-        return binary
-    }
-}
-
-class array2D{
-    constructor(height, width, value){
-        this.height = height
+class matrix2D{
+    constructor(width, height, data){
         this.width = width
-
-        if(!value){
-            this.data = []
-            for(var x = 0; x < height; x++){
-                var arr = []
-                for(var y = 0; y < width; y++){
-                    arr.push(templateFunctions.random(1))
-                }
-                this.data.push(arr)
-            }
-        }else{
-            this.data = value
-        }
+        this.height = height
+        this.data = data
     }
-
-    map(callback){
-        if(typeof this.data[0] != "object"){
-            this.data = [this.data]
-        }
-        this.height = this.data.length
-        this.width = this.data[0].length
-
-        return this.data.map((arr, x)=>{
-            return arr.map((num, y)=>{
-                return callback(num, x, y)
+    sigmoid(){
+        var arr = this.data.map(subarr=>{
+            return subarr.map((value)=>{
+                return 1 / (1 + Math.exp(-value))
             })
         })
+        return new matrix2D(this.width, this.height, arr)
     }
-
-    static transpose(a){
-        var arr = new array2D(a.width, a.height)
-        arr.data = arr.map((arr, x, y)=>{
-            return a.data[y][x] || a.data[y]
+    derivatedSigmoid(){
+        var arr = this.data.map(subarr=>{
+            return subarr.map((value)=>{
+                return value * (1 - value)
+            })
         })
-        return arr
+        return new matrix2D(this.width, this.height, arr)
     }
-
-    static hadamard(a, b){
-        var arr = new array2D(a.height, a.width)
-        arr.data = arr.map((arr, x, y)=>{
-            return a.data[x][y] * b.data[x][y]
-        })
-        return arr
+    print(){
+        console.log(`width: ${this.width} | height: ${this.height}`)
+        console.log(this.data)
+        console.table(this.data)
     }
-
-    static sub(a, b){
-        var arr = new array2D(a.height, a.width)
-        arr.data = arr.map((arr, x, y)=>{
-            var elm1 = a.data[x][y] || a.data[x]
-            var elm2 = b.data[x][y] || b.data[x]
-            return elm1 - elm2
-        })
-        return arr
+    static convertUndefined(value){
+        return value == undefined? 1: value
     }
-
-    static sum(a, b){
-        var arr = new array2D(b.height, b.width)
-        arr.data = arr.map((arr, x, y)=>{
-            return a.data[x][y] + b.data[x][y]
-        })
-        return arr
+    static fromRandomValues(width, height){
+        var arr = []
+        for(let x = 0; x < width; x++){
+            let subarr = []
+            for(let y = 0; y < height; y++){
+                subarr.push(Math.random()*2-1)
+            }
+            arr.push(subarr)
+        }
+        return new matrix2D(width, height, arr)
     }
+    static layerMultiplication(matrix1, matrix2){
+        var arr = matrix1.data[0].map((subarr, y)=>{
+            var sum = 0
+            for (let k = 0; k < matrix1.width; k++) {
+                var elm1 = matrix2D.convertUndefined(matrix1.data[k][y])
+                var elm2 = matrix2D.convertUndefined(matrix2.data[k][0])
 
-    static escalarMultiply(a, escalar){
-        var arr = new array2D(a.height, a.width)
-        arr.data = arr.map((arr, x, y)=>{
-            return a.data[x][y] * escalar
-        })
-        return arr
-    }
-
-    static multiply(a, b) {
-        var arr = new array2D(a.height, b.width)
-
-        arr.data = arr.map((arr, x, y) => {
-            let sum = 0
-            for (let k = 0; k < a.width; k++) {
-                var elm1 = a.data[x].length? a.data[x][k] : a.data[x]
-                var elm2 = b.data[k].length? b.data[k][y] : b.data[k]
                 sum += elm1 * elm2
             }
             return sum
         })
+        return new matrix2D(1, matrix1.height, [arr])
+    }
+    static layerSum(matrix1, matrix2){
+        var arr = matrix1.data[0].map((subarr, x)=>{
+            let sum = matrix2.data.map(value=>value[x]).reduce((a, b)=>a+b, 0)
+            return [sum+matrix1.data[0][x]]
+        })
 
+        return new matrix2D(matrix1.height, matrix1.width, arr)
+    }
+    static dotMultiplication(matrix1, matrix2){
+        var arr = []
+        for(var x = 0; x < matrix2.width; x++){
+            var subarray = []
+            for(var y = 0; y < matrix1.height; y++){
+                let sum = 0
+                for (let k = 0; k < matrix1.width; k++) {
+                    var elm1 = matrix2D.convertUndefined(matrix2.data[x][k])
+                    var elm2 = matrix2D.convertUndefined(matrix1.data[k][y])
+                    sum += elm1 * elm2
+                }
+                subarray.push(sum)
+            }
+            arr.push(subarray)
+        }
+        return new matrix2D(matrix2.width, matrix1.height, arr)
+    }
+    static crossMultiplication(matrix1, matrix2){
+        var arr = matrix1.data.map((subarr, x)=>{
+            return subarr.map((value, y)=>{
+                return matrix1.data[x][y] * matrix2.data[x][y]
+            })
+        })
+        return matrix2D.transpose(new matrix2D(matrix1.width, matrix1.height, arr))
+    }
+    static simpleSum(matrix1, matrix2){
+        var arr = matrix1.data.map((subarr, x)=>{
+            return subarr.map((value, y)=>{
+                return matrix1.data[x][y] + matrix2.data[x][y]
+            })
+        })
+        return new matrix2D(matrix1.width, matrix1.height, arr)
+    }
+    static scaleMultiplication(matrix1, scale){
+        var arr = matrix1.data.map((subarr, x)=>{
+            return subarr.map((value, y)=>{
+                return matrix1.data[x][y] * scale
+            })
+        })
+        return new matrix2D(matrix1.width, matrix1.height, arr)
+    }
+    static sum(matrix1, matrix2){
+        var arr = matrix2.data.map((subarr, x)=>{
+            return subarr.map((value, y)=>{
+                return matrix1.data[x][y] + matrix2.data[x][y]
+            })
+        })
+        return new matrix2D(matrix2.width, matrix2.height, arr)
+    }
+    static subtract(matrix1, matrix2){
+        var arr = matrix1.data.map((subarr, x)=>{
+            return subarr.map((value, y)=>{
+                return matrix1.data[x][y] - matrix2.data[x][y]
+            })
+        })
+        return new matrix2D(matrix1.width, matrix1.height, arr)
+    }
+    static sumError(matrix1, matrix2){
+        var sum = 0
+        for(var x = 0; x < matrix1.width; x++){
+            for(var y = 0; y < matrix1.height; y++){
+                sum += Math.abs(matrix1.data[x][y] - matrix2.data[x][y])
+            }
+        }
+        return sum
+    }
+    static transpose(matrix){
+        var arr = matrix2D.returnTransposedArray(matrix.data)
+        return new matrix2D(matrix.height, matrix.width, arr)
+    }
+    static returnTransposedArray(data){
+        var arr = []
+        for(let x = 0; x < data[0].length; x++){
+            let subarr = []
+            for(let y = 0; y < data.length; y++){
+                subarr.push(data[y][x])
+            }
+            arr.push(subarr)
+        }
         return arr
     }
 }
 
-export class neuralNetwork{
+class dataset{
+    constructor(){
+        this.inputs = []
+        this.outputs = []
+    }
+    add(input, output){
+        this.inputs.push(input)
+        this.outputs.push(output)
+    }
+}
+
+class neuralNetwork{
     constructor(nodes, learningRate = .1){
         this.nodes = nodes
-        this.bias = []
-        this.weigths = []
-
-        this.dataSet = {inputs: [], outputs: []}
         this.learningRate = learningRate
 
+        this.bias = []
+        this.weigths = []
         for(var c = 1; c < nodes.length; c++){
-            this.bias.push(new array2D(nodes[c], 1))
+            this.bias.push(matrix2D.fromRandomValues(1, nodes[c]))
         }
         for(var c = 1; c < nodes.length; c++){
-            this.weigths.push(new array2D(nodes[c], nodes[c-1]))
+            this.weigths.push(matrix2D.fromRandomValues(nodes[c-1], nodes[c]))
         }
     }
-
-    set(input, expectedOutput){
-        this.dataSet.inputs.push(input)
-        this.dataSet.outputs.push(expectedOutput)
-    }
-
-    async asyncExecute(inputArr){
-        var res = new array2D(this.inputNodes, 1, inputArr)
+    execute(input){
+        var value = new matrix2D(this.nodes[0], 1, matrix2D.returnTransposedArray([input]))
         for(var c = 0; c < this.nodes.length-1; c++){
-            res = array2D.multiply(this.weigths[c], res)
-            res = array2D.sum(res, this.bias[c])
-            res.data = res.map(templateFunctions.sigmoid)
+            value = matrix2D.layerMultiplication(this.weigths[c], value)
+            value = matrix2D.layerSum(this.bias[c], value)
+            value = value.sigmoid()
         }
 
-        return array2D.transpose(res).data[0]
+        return matrix2D.transpose(value).data[0]
     }
+    train(dataset, repeats){
+        for(let r = 0; r < repeats;r++){
+            for(let d = 0; d < dataset.inputs.length; d++){
+                let inputArr = matrix2D.returnTransposedArray([dataset.inputs[d]])
+                let outputArr = matrix2D.returnTransposedArray([dataset.outputs[d]])
 
-    execute(inputArr){
-        var res = new array2D(this.inputNodes, 1, inputArr)
-        for(var c = 0; c < this.nodes.length-1; c++){
-            res = array2D.multiply(this.weigths[c], res)
-            res = array2D.sum(res, this.bias[c])
-            res.data = res.map(templateFunctions.sigmoid)
-        }
-
-        return array2D.transpose(res).data[0]
-    }
-
-    async train(repeats){
-        for(var e = 0; e < repeats; e++){
-            for(var c in this.dataSet.inputs){
-                var inputArr = this.dataSet.inputs[c]
-                var outputArr = this.dataSet.outputs[c]
-
-                var history = [new array2D(this.nodes[0], 1, inputArr)]
-                var output = new array2D(this.inputNodes, 1, inputArr)
+                let output = new matrix2D(this.nodes[0], 1, inputArr)
+                let history = [output]
 
                 // FeedForward
-                for(var c = 0; c < this.nodes.length-1; c++){
-                    output = array2D.multiply(this.weigths[c], output)
-                    output = array2D.sum(output, this.bias[c])
-                    output.data = output.map(templateFunctions.sigmoid)
-                    
+                for(let c = 0; c < this.nodes.length-1; c++){
+                    output = matrix2D.layerMultiplication(this.weigths[c], output)
+                    output = matrix2D.layerSum(this.bias[c], output)
+                    output = output.sigmoid()
+
                     history.push(output)
                 }
-        
+
                 // BackPropagation
-                var expected = new array2D(this.nodes[this.nodes.length-1], 1, outputArr)
+                let historyDerivated = history.map(elm => matrix2D.transpose(elm.derivatedSigmoid()))
                 
-                var historyTransposed = history.map(elm => array2D.transpose(elm))
-                var historyDerivated = history.map(elm => new array2D(elm.height, elm.width, elm.map(templateFunctions.dsigmoid)))
-        
-                var error = array2D.sub(expected, output)
-                for(var c = this.nodes.length-1; c >= 1;c--){
-                    if(c != this.nodes.length-1){
-                        var nextWeigth = array2D.transpose(this.weigths[c])
-                        error = array2D.multiply(nextWeigth, error)
-                    }
-        
-                    var gradient = array2D.hadamard(error, historyDerivated[c])
-                    gradient = array2D.escalarMultiply(gradient, this.learningRate)
-                    this.bias[c-1] = array2D.sum(this.bias[c-1], gradient)
-        
-                    var deltas = array2D.multiply(gradient, historyTransposed[c-1])
-                    this.weigths[c-1] = array2D.sum(this.weigths[c-1], deltas)
+                let expected = new matrix2D(this.nodes[this.nodes.length-1], 1, outputArr)
+                let error = matrix2D.transpose(matrix2D.subtract(expected, output))
+                for(let c = this.nodes.length-1; c >= 1;c--){
+
+                    let gradient = matrix2D.crossMultiplication(error, historyDerivated[c])
+                    gradient = matrix2D.scaleMultiplication(gradient, this.learningRate)
+                    gradient = matrix2D.transpose(gradient)
+                    this.bias[c-1] = matrix2D.simpleSum(this.bias[c-1], gradient)
+
+                    let deltas = matrix2D.dotMultiplication(gradient, history[c-1])
+                    this.weigths[c-1] = matrix2D.sum(this.weigths[c-1], deltas)
+
+                    if(c == 0) break
+                    let nextWeigth = matrix2D.transpose(this.weigths[c-1])
+                    error = matrix2D.dotMultiplication(nextWeigth, error)
                 }
             }
         }
     }
 
+    trainUntilScore(dataset, percentage){
+        let repeats = 0
+        let errorMax = dataset.inputs.length * this.nodes[this.nodes.length-1]
+        let score = 0
+        while(score < percentage) {
+            repeats++
+            let errorSum = 0
+            for(let d = 0; d < dataset.inputs.length; d++){
+                let inputArr = matrix2D.returnTransposedArray([dataset.inputs[d]])
+                let outputArr = matrix2D.returnTransposedArray([dataset.outputs[d]])
+
+                let output = new matrix2D(this.nodes[0], 1, inputArr)
+                let history = [output]
+
+                // FeedForward
+                for(let c = 0; c < this.nodes.length-1; c++){
+                    output = matrix2D.layerMultiplication(this.weigths[c], output)
+                    output = matrix2D.layerSum(this.bias[c], output)
+                    output = output.sigmoid()
+
+                    history.push(output)
+                }
+
+                // BackPropagation
+                let historyDerivated = history.map(elm => matrix2D.transpose(elm.derivatedSigmoid()))
+                
+                let expected = new matrix2D(this.nodes[this.nodes.length-1], 1, outputArr)
+                let error = matrix2D.subtract(expected, output)
+
+                errorSum += matrix2D.sumError(expected, output)
+
+                for(let c = this.nodes.length-1; c >= 1;c--){
+                    let gradient = matrix2D.crossMultiplication(error, historyDerivated[c])
+                    gradient = matrix2D.scaleMultiplication(gradient, this.learningRate)
+                    gradient = matrix2D.transpose(gradient)
+                    this.bias[c-1] = matrix2D.simpleSum(this.bias[c-1], gradient)
+
+                    let deltas = matrix2D.dotMultiplication(gradient, history[c-1])
+                    this.weigths[c-1] = matrix2D.sum(this.weigths[c-1], deltas)
+
+                    if(c == 0) break
+                    let nextWeigth = matrix2D.transpose(this.weigths[c-1])
+                    error = matrix2D.dotMultiplication(nextWeigth, error)
+                }
+            }
+
+            score = 100 + errorSum / errorMax * -200
+        }
+        return repeats
+    }
+    
     generateRecipe(){
         return JSON.stringify({
             nodes: this.nodes,
@@ -208,81 +283,35 @@ export class neuralNetwork{
         })
     }
 
-    static fromRecipe(recipe){
+    static mutate(base, learningRate = .3){
+        var n = new neuralNetwork(base.nodes)
+        n.weigths = base.weigths.map(w => {
+            return array2D.fromValue(w.map((value)=>value * (1 + templateFunctions.random(learningRate))))
+        })
+        n.bias = base.bias.map(b => {
+            return array2D.fromValue(b.map((value)=>value * (1 + templateFunctions.random(learningRate))))
+        })
+
+        return n
+    }
+
+    static fromRecipe(recipe, legacy = false){
         var obj = JSON.parse(recipe)
 
         var res = new neuralNetwork(obj.nodes)
         res.weigths = obj.weigths.map(x => {
-            return new array2D(x.length, x[0].length, x)
+            return legacy?
+                matrix2D.transpose(new matrix2D(x.length, x[0].length, x)):
+                new matrix2D(x.length, x[0].length, x)
         })
-        res.bias = obj.bias.map(x => {
-            return new array2D(x.length, x[0].length, x)
+        res.bias = obj.bias.map(x => {matrix2D
+            return legacy?
+                matrix2D.transpose(new matrix2D(x.length, x[0].length, x)):
+                new matrix2D(x.length, x[0].length, x)
         })
 
         return res
     }
 }
 
-export class wordIdentifier{
-    constructor(maxIndex, wordEmbedding, prefab = null){
-        if(maxIndex < 2){maxIndex = 2}
-        this.maxIndexes = Math.ceil(Math.log(maxIndex) / Math.log(2))
-        this.neuralNetwork = !prefab?
-            new neuralNetwork([50, 5, this.maxIndexes, this.maxIndexes], .5) : 
-            neuralNetwork.fromRecipe(prefab)
-        this.wordEmbedding = wordEmbedding
-    }
-    useWordEmbedding(message){
-        let embeddings = []
-        for(var c in message.split(" ")){
-            let word = message.split(" ")[c]
-                .replaceAll(",", "")
-                .replaceAll("!", "")
-                .replaceAll("?", "")
-
-            if(this.wordEmbedding[word]){
-                embeddings.push(this.wordEmbedding[word])
-            }
-        }
-
-        if(embeddings.length < 1){
-            embeddings.push(Array(50).fill(0))
-        }
-
-        let sum = []
-        for(var i = 0; i < embeddings.length; i++){
-            for(var j = 0; j < embeddings[i].length; j++){
-                if(!sum[j]){
-                    sum[j] = 0
-                }
-                sum[j] += embeddings[i][j]
-            }
-        }
-
-        let res = sum.map(x=>x/embeddings.length)
-
-        return res
-    }
-    run(message){
-        let input = this.useWordEmbedding(message)
-        let rawResponse = this.neuralNetwork.execute(input)
-        let response = rawResponse.map(x=>{
-            return Math.round(x)
-        })
-        let decimal = parseInt(response.join(""), 2)
-        return decimal
-    }
-    train({dataset, iterations}){
-        Object.keys(dataset).forEach(message=>{
-            let input = this.useWordEmbedding(message)
-            
-            let output = templateFunctions.toBinary(dataset[message], this.maxIndexes)
-                .split("")
-                .map(x=>parseInt(x))
-            
-            this.neuralNetwork.set(input, output)
-        })
-    
-        this.neuralNetwork.train(iterations)
-    }
-}
+module.exports = { neuralNetwork, dataset }
